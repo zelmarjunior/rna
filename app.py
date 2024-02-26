@@ -32,12 +32,10 @@ def trainESBLModel():
     X = pd.read_excel('./datasets/Base_de_dados_RNA.xlsx')
     y = pd.read_excel('./datasets/vetor_target_ESBL.xlsx')
     
-    print(type(X))
-    print(X)
     # Aplicar normalização aos dados
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X)
-    print(X_scaled)
+
     # Dividir os dados em conjuntos de treinamento e teste
     X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)
 
@@ -76,7 +74,7 @@ def trainESBLModel():
     # Ordena o DataFrame pela importância em ordem decrescente
     importance_df = importance_df.sort_values(by='Importância', ascending=False)
 
-    # Plota o gráfico de barras
+    # Plota o gráfico de barras, removido do backend
     #plt.figure(figsize=(10, 6))
     #ax = sns.barplot(data=importance_df, x='Importância', y='Variável', palette='viridis')
     #plt.xlabel('Importância')
@@ -120,14 +118,11 @@ def trainESBLModel():
 
     # Calcular e exibir a matriz de confusão para os dados totais
     y_pred_total = best_mlp.predict(X_scaled)
-    print('y_pred_total dados totais')
-    print(y_pred_total)
     conf_matrix_total = confusion_matrix(y, y_pred_total)
     
     #Salva os dados em disco para recuperar nas predições
     joblib.dump(best_mlp, 'model_esbl.joblib')
     joblib.dump(scaler, 'scaler.joblib')
-    joblib.dump(y, 'esbl.joblib')
 
     #plt.figure(figsize=(8, 6))
     #sns.heatmap(conf_matrix_total, annot=True, fmt="d", cmap="Blues", cbar=False)
@@ -151,73 +146,41 @@ def trainESBLModel():
     print("Valor Preditivo Negativo (VPN) - Total: {:.3f}".format(VPN_total))
 
 def predict_with_model(input_data):
-    # Carregar o modelo e o scaler salvos
     mlp = joblib.load('model_esbl.joblib')
     scaler = joblib.load('scaler.joblib')
-    y = joblib.load('esbl.joblib')
-    print('Dados')
-    print(input_data)
+
     # Faz a normalização de dados
-    X_scaled = scaler.fit_transform(input_data)
-    print('X_scaled')
-    print(type(X_scaled))
-    
-    # Realiza a predição
-    y_pred_total = mlp.predict(X_scaled)
-    #y = pd.read_excel('./datasets/vetor_target_ESBL.xlsx')
-    print('----Pred Total')
-    print(type(y_pred_total))
-    print(y_pred_total)
-    print('---- y')
-    print(type(y))
-    print(y)
-    
-    """     
-    
-    conf_matrix_total = confusion_matrix(y, y_pred_total)
-    print('conf_matrix_total')
-    print(conf_matrix_total) """
-    
-    """     # Calcular sensibilidade, especificidade, VPP e VPN nos dados totais
-    TN_total, FP_total, FN_total, TP_total = conf_matrix_total.ravel()
+    X_scaled = scaler.transform(input_data)
 
-    sensibilidade_total = TP_total / (TP_total + FN_total)
-    especificidade_total = TN_total / (TN_total + FP_total)
-    VPP_total = TP_total / (TP_total + FP_total)
-    VPN_total = TN_total / (TN_total + FN_total)
+    # Realiza a predição de probabilidade
+    y_pred_proba = mlp.predict_proba(X_scaled)
+    print('Probabilidades de predição:')
+    print(y_pred_proba)
 
-    # Exibir as métricas para os dados totais
-    print("Sensibilidade (TVP) - Total: {:.3f}".format(sensibilidade_total))
-    print("Especificidade - Total: {:.3f}".format(especificidade_total))
-    print("Valor Preditivo Positivo (VPP) - Total: {:.3f}".format(VPP_total))
-    print("Valor Preditivo Negativo (VPN) - Total: {:.3f}".format(VPN_total)) """
+    proba_classe_positiva = y_pred_proba[:, 1]
+    print('Probabilidade da classe positiva:')
+    print(proba_classe_positiva)
     
-    return 'prediction'
+    return proba_classe_positiva.tolist()
 
 app = Flask(__name__)
 
 @app.route('/prediction', methods=['POST'])
 def prediction():
-
     # Obtém os dados JSON da requisição POST
     json_data = request.get_json()
 
-    print(type(json_data))
-    print(json_data)
-    # Verifica se os dados estão presentes
     if not json_data:
         return jsonify({"error": "Nenhum dado JSON fornecido"}), 400
 
     # Cria um DataFrame a partir dos dados JSON
     df = pd.DataFrame([json_data])
-    print(df)
     
+    # Faz a predição com o modelo
     prediction_result = predict_with_model(df)
-    print('Depois da predição!')
-    print(prediction_result)
 
+    # Retorna o resultado da predição
     return jsonify({"prediction": prediction_result})
-    #return jsonify({"prediction": prediction_result.tolist()})
 
 if __name__ == '__main__':
     #trainESBLModel()
