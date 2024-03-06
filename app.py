@@ -14,7 +14,7 @@ import joblib
 
 def predict_with_model_ESBL(input_data):
     mlp = joblib.load('model_esbl.joblib')
-    scaler = joblib.load('scaler.joblib')
+    scaler = joblib.load('scaler_esbl.joblib')
 
     # Faz a normalização de dados
     X_scaled = scaler.transform(input_data)
@@ -31,7 +31,7 @@ def predict_with_model_ESBL(input_data):
     return proba_classe_positiva.tolist()
 
 def predict_with_model_CRE(input_data):
-    mlp = joblib.load('model_esbl.joblib')
+    mlp = joblib.load('model_cre.joblib')
     scaler = joblib.load('scaler_cre.joblib')
 
     # Faz a normalização de dados
