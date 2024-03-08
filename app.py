@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 import pandas as pd
 from sklearn.neural_network import MLPClassifier
 from sklearn.model_selection import cross_val_score, GridSearchCV, train_test_split
@@ -49,6 +50,7 @@ def predict_with_model_CRE(input_data):
     return proba_classe_positiva.tolist()
 
 app = Flask(__name__)
+CORS(app)
 
 @app.route('/prediction', methods=['POST'])
 def prediction():
@@ -69,4 +71,4 @@ def prediction():
     return jsonify({"prediction_esbl": prediction_esbl, "prediction_cre": prediction_cre})
 
 if __name__ == '__main__':
-    app.run(debug=False)
+    app.run(host='0.0.0.0', port=8080)
