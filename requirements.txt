@@ -7,3 +7,4 @@ seaborn
 tabulate
 imblearn
 joblib
+flask_cors
